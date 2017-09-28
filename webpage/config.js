@@ -1,4 +1,4 @@
-var ip='129.25.56.198'
+var ip='192.168.200.129'
 var cmdTopic='/usma_remote/webcmd'
 var imageTopic='/usb_cam/image_raw'
 var sensorList=['TEMP','CO2','CO','METHANE','GAS']

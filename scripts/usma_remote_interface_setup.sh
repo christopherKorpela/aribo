@@ -9,7 +9,7 @@ rospd usma_remote_interface/webpage
 sudo apt-get update
 sudo apt-get install apache2
 
-sudo apt-get install ros-indigo-rosbridge-server ros-indigo-mjpeg-server
+sudo apt-get install ros-kinectic-rosbridge-server ros-kinectic-mjpeg-server
 
 echo "
 <VirtualHost *:80>
