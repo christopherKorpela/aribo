@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="use_usb_cam" default="true" />
+  <arg name="use_usb_cam" default="false" />
   <arg name="use_ptg_cam" default="false" />
   <arg name="use_gscam" default="false" />
 
@@ -8,7 +8,7 @@
 
   <node pkg="web_video_server" type="web_video_server" name="web_video_server" />
 
-  <!-- <rosparam command="load" file="$(find usma_remote_interface)/config/gains.yaml" /> -->
+  <!-- <rosparam command="load" file="$(find usma_remote_interface)/config/gains.yaml" />
 
   <node pkg="usma_remote_interface" type="remoteCmdDemux.py" name="remote_cmd_demux" output="screen">
   </node>

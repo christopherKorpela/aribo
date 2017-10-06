@@ -45,24 +45,7 @@
         ros.on('close', function() {
                 console.log('Connection to websocket server closed.');
                 });
-        
-        // we're only going to keep 1 publisher here and demux it onboard
-        var cmdPublisher = new ROSLIB.Topic({
-        ros : ros,
-        name : cmdTopic,
-        messageType : 'geometry_msgs/TwistStamped'
-        });
-        
-        function twistPublish(dx,dy,cmd_target)
-        {
-            twist = new ROSLIB.Message({
-                                        header: {seq:0,stamp:{sec:0,nsec:0}, frame_id: cmd_target},
-                                        twist: {linear : {x : dy, y : 0, z : 0},
-                                                angular : {x : 0, y : 0, z : dx}}
-                                       });
-        
-            cmdPublisher.publish(twist);
-        }
+
         
         window.onresize = function(event) {
             generateHTML();
@@ -70,7 +53,7 @@
 
         // regenerate html whenever something on the screen changes
         function generateHTML(){
-            mjpegEle = document.getElementById("mjpeg").getElementsByTagName("canvas")[0];
+            mjpegEle = document.getElementById("mjpeg").getElementsByTagName("img")[0];
             cont = document.getElementById("content").getElementsByTagName("td");
             width = document.body.offsetWidth;
         
@@ -97,29 +80,9 @@
                 mjpegEle.width=width;
             }
         }
-
-        // Functions to load assets
-        function loadTeleop()
-        {
-            loadJoy();
-            state = "teleop";
-            generateHTML();
-        }
         
         function init(){
-            // Create the main viewer.
-            camera_viewer = new MJPEGCANVAS.Viewer({
-                divID : 'mjpeg',
-                host : ip, 
-                width : 640,
-                height : 480,
-                quality: 10,
-                topic : imageTopic
-            });
-       
-            twistPublish(0.0,0.0,"");
-            
-            loadTeleop();
+            imageFeed();
             generateHTML();
 
             sensorHTML = "";
@@ -139,14 +102,54 @@
                 name : sensorList[i],
                 messageType : 'std_msgs/Float64'
               });
-              subFuncs[i] = sensorSub.bind(null, i);
+              subFuncs[i] = sensorCb.bind(null, i);
 
               listeners[i].subscribe( subFuncs[i] );
             }
             document.getElementById("sensor_listing").innerHTML = sensorHTML;
         }
-      
-        function sensorSub(ij, message) {
+        var map;
+        var marker;
+        
+        function gpsFeed() {
+          var starting_center = new google.maps.LatLng(52.3702157, 4.8951679);
+          var mapOptions = {
+            center: starting_center,
+            zoom: 10,
+            mapTypeId: google.maps.MapTypeId.HYBRID
+          }
+          map = new google.maps.Map(document.getElementById("map"), mapOptions);
+        
+          marker = new google.maps.Marker({
+            position: starting_center,
+            map: map
+          });
+
+          gps_sub = new ROSLIB.Topic({
+            ros : ros,
+            name : gpsTopic,
+            messageType : 'sensor_msgs/NavSatFix'
+          });
+
+          gps_sub.subscribe(gpsCb);
+        }
+
+        function gpsCb(msg){
+          var new_center = new google.maps.LatLng(msg.latitude, msg.longitude);
+          map.setCenter(new_center);
+          marker.setPosition(new_center);
+        }
+        
+        function imageFeed() {
+          img_html="<img src=\"http://"+ip+":"+web_socket_port;
+          img_html+="/stream?topic="+imageTopic+"\"></img>";
+          img_html+="\"\\>";
+        
+          img = document.getElementById("mjpeg");
+          img.innerHTML = img_html;
+        }
+        
+        function sensorCb(ij, message) {
           console.log('arguments.length ' + arguments.length );
           for( i = 0; i < arguments.length; i++)
           {
@@ -186,6 +189,11 @@
                     <div id="mjpeg"></div>
                     <span id="result"></span>
                   </td>
+
+                  <td height=0 width=0>
+                    <div id="map" style="width:400px;height:400px">
+                  </td>
+
                   <td height=120 width=30>
 
                     <div class="list-group" id="sensor_listing">
@@ -198,52 +206,11 @@
           </div>
         </div>
 
-        <!-- Load the virtual joystick javascript file -->
-        <script src="virtualjoystick.js"></script>
 
-        <!-- Load and handle the actual joysticks -->
-        <script>
-        function loadJoy(){
-            console.log("touchscreen is", VirtualJoystick.touchScreenAvailable() ? "available" : "not available");
-            // 
-            var joystick_left    = new VirtualJoystick({
-                container   : document.getElementById("mjpeg"),
-                strokeStyle : 'cyan',
-                limitStickTravel: true,
-                stickRadius : 120       
-            });
-            joystick_left.addEventListener('touchStartValidation', function(event){
-                var touch   = event.changedTouches[0];
-                if( touch.pageX > window.innerWidth/2 ) return false;
-                return true
-            });
-            // one on the right of the screen
-            var joystick_right    = new VirtualJoystick({
-                container   : document.getElementById("mjpeg"),
-                strokeStyle : 'orange',
-                limitStickTravel: true,
-                stickRadius : 120     
-            });
-            joystick_right.addEventListener('touchStartValidation', function(event){
-                var touch   = event.changedTouches[0];
-                if( touch.pageX <= window.innerWidth/2 )    return false;
-                return true
-            });
+    <script>
+    </script>
 
-            setInterval(
-                function()
-                {
-                    twistPublish(-joystick_left.deltaX()/window.innerHeight,-joystick_left.deltaY()/window.innerHeight,"left");
-                    twistPublish(-joystick_right.deltaX()/window.innerHeight,-joystick_right.deltaY()/window.innerHeight,"right");
-                }, 1/10 * 1000
-            );
-        }
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCuNBNktLtyOfnruUEEsnNB7ALxvoce_OI&callback=gpsFeed" async defer></script>
 
-        function destroyJoy(){
-            joystick_left.destroy();
-            joystick_right.destroy();
-        }
-
-        </script>
     </body>
 </html>
