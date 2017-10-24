@@ -158,7 +158,6 @@
         function imageFeed() {
           img_html="<img src=\"http://"+ip+":"+web_socket_port;
           img_html+="/stream?topic="+applyNS(sensorNamespace,imageTopic)+"\"></img>";
-          img_html+="\"\\>";
         
           img = document.getElementById("mjpeg");
           img.innerHTML = img_html;
