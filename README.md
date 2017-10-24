@@ -18,11 +18,11 @@ usma_remote_interface
   * `ls /dev/video*` (to see available video devices)
   * `gedit remote.launch` (or your preferred editor)
   * Change the video device. Internal webcams will typically be video0, an external webcam could be video1.
-    * <arg name="video_device" default="/dev/video1" />
+    * `<arg name="video_device" default="/dev/video1" />`
 
 5. Edit the javascript config.
   * `roscd usma_remote_interface/webpage`
-  * `vim config.js` (or your preferred editor)
+  * `gedit config.js` (or your preferred editor)
   * Edit the file to reflect desired topics and IPs
 
 6. Launch remote.launch.
