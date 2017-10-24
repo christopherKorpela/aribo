@@ -8,7 +8,7 @@
 
   <group if="$(arg use_usb_cam)">
     <arg name="width" default="640" />
-    <arg name="height" default="420" />
+    <arg name="height" default="480" />
     <arg name="video_device" default="/dev/video0" />
   
     <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen">
