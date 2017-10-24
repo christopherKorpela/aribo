@@ -1,4 +1,4 @@
-var ip='10.0.0.136'
+var ip='192.168.200.88'
 var web_socket_port='8080'
 
 var sensorNamespace='quad0'
