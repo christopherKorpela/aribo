@@ -1,249 +1,131 @@
+<!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-        <script type="text/javascript" src="javascript/easeljs.min.js"></script>
-        <script type="text/javascript" src="javascript/eventemitter2.min.js"></script>
-        <script type="text/javascript" src="javascript/roslib.min.js"></script>
-        <script type="text/javascript" src="javascript/mjpegcanvas.min.js"></script>
-        <script type="text/javascript" src="javascript/ros2d.min.js"></script>
-        <script type="text/javascript" src="javascript/nav2d.js"></script>
-        
-        <link href="css/bootstrap.min.css" rel="stylesheet">
-        
-        <link href="css/style.css" rel="stylesheet">
 
-        <script type="text/javascript" src="config.js"></script> 
-        <script type="text/javascript" type="text/javascript">
-        function getParam(name)
-        {  
-            name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");  
-            var regexS = "[\\?&]"+name+"=([^&#]*)";  
-            var regex = new RegExp( regexS );  
-            var results = regex.exec(window.location.href);
-            if(results == null)
-                return "";  
-            else    
-                return results[1];
-        }
-        
-        // would like to have the IP parameter set in a launch file
-        
-        var state = "teleop";
-        var ros = new ROSLIB.Ros({
-        url : 'ws://'+ip+':9090'
-        });
-        
-        ros.on('connection', function() {
-                console.log('Connected to websocket server.');
-                });
-        
-        ros.on('error', function(error) {
-                console.log('Error connecting to websocket server: ', error);
-                });
-        
-        ros.on('close', function() {
-                console.log('Connection to websocket server closed.');
-                });
-        
-        // we're only going to keep 1 publisher here and demux it onboard
-        var cmdPublisher = new ROSLIB.Topic({
-        ros : ros,
-        name : cmdTopic,
-        messageType : 'geometry_msgs/TwistStamped'
-        });
-        
-        function twistPublish(dx,dy,cmd_target)
-        {
-            twist = new ROSLIB.Message({
-                                        header: {seq:0,stamp:{sec:0,nsec:0}, frame_id: cmd_target},
-                                        twist: {linear : {x : dy, y : 0, z : 0},
-                                                angular : {x : 0, y : 0, z : dx}}
-                                       });
-        
-            cmdPublisher.publish(twist);
-        }
-        
-        window.onresize = function(event) {
-            generateHTML();
-        }
+<head>
+  <meta charset="utf-8" />
 
-        // regenerate html whenever something on the screen changes
-        function generateHTML(){
-            mjpegEle = document.getElementById("mjpeg").getElementsByTagName("canvas")[0];
-            cont = document.getElementById("content").getElementsByTagName("td");
-            width = document.body.offsetWidth;
-        
-            if (width >= 740)
-            {
-                cont[0].height=480;
-                cont[0].width=640;
-                cont[1].height=480;
-                cont[1].width=100;
-                mjpegEle.height=480;
-                mjpegEle.width=640;
-            }
-            else
-            {
-                width = width - 100;
-                if(width>=640) {width=640;}
-                cont[0].height=width*2/3;
-                cont[0].width=width;
+  <script type="text/javascript" src="http://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+  <script src="./node_modules/nipplejs/dist/nipplejs.js"></script>
+  <script type="text/javascript" type="text/javascript">
 
-                cont[1].height=480;
-                cont[1].width=100;
+    var host_url = window.location.hostname;
+    console.log(host_url);
 
-                mjpegEle.height=width*2/3;
-                mjpegEle.width=width;
-            }
-        }
+    var ros = new ROSLIB.Ros({
+      url: 'ws://' + host_url + ':9090'
+    });
 
-        // Functions to load assets
-        function loadTeleop()
-        {
-            loadJoy();
-            state = "teleop";
-            generateHTML();
-        }
-        
-        function init(){
-            // Create the main viewer.
-            camera_viewer = new MJPEGCANVAS.Viewer({
-                divID : 'mjpeg',
-                host : ip, 
-                width : 640,
-                height : 480,
-                quality: 10,
-                topic : imageTopic
-            });
-       
-            twistPublish(0.0,0.0,"");
-            
-            loadTeleop();
-            generateHTML();
+    ros.on('connection', function () {
+      document.getElementById("status").innerHTML = "Connected";
+    });
 
-            sensorHTML = "";
-            var listeners = [];
-            var subFuncs = [];
+    ros.on('error', function (error) {
+      document.getElementById("status").innerHTML = "Error";
+    });
 
-            for (i = 0; i < sensorList.length; i++) {
-              sensorHTML += '<a href="#" id="';
-              sensorHTML += sensorList[i];
-              sensorHTML += '" class="list-group-item list-group-item-success">';
-              sensorHTML += sensorList[i];
-              sensorHTML += '</a>';
+    ros.on('close', function () {
+      document.getElementById("status").innerHTML = "Closed";
+    });
+
+    createJoystick = function () {
+      var options = {
+        zone: document.getElementById('joy_container'),
+        threshold: 0.1,
+        position: { left: '50%', top: '50%' },
+        mode: 'static',
+        size: 150,
+      };
+      manager = nipplejs.create(options);
+
+      self.manager.on('start', function (event, nipple) {
+      });
+
+      self.manager.on('move', function (event, nipple) {
+        var max_distance = 75;
+        var x = -Math.cos(nipple.angle.radian) * nipple.distance / max_distance;
+        var y = Math.sin(nipple.angle.radian) * nipple.distance / max_distance;
+        axes = [x, y]
+        joy_event()
+      });
+
+      self.manager.on('end', function () {
+        axes = [0, 0]
+        joy_event()
+      });
+    }
+    window.onload = function () {
+      createJoystick();
+      // Video output
+      stream_url = '//' + host_url + ':8080/stream?topic=/camera/color/image_raw';
+      console.log(stream_url);
+      document.getElementById("video_output").src = stream_url;
+    }
+
+    joy_listener = new ROSLIB.Topic({
+      ros: ros,
+      name: "/joy",
+      messageType: 'sensor_msgs/Joy'
+    });
+
+    joy_event = function () {
+      var joy = new ROSLIB.Message({
+        axes: axes,
+        buttons: buttons
+      });
+      joy_listener.publish(joy);
+      console.log(axes)
+      console.log(buttons)
+    }
+
+    buttonY_clicked = function () {
+      buttons = [0, 0, 0, 1];
+      joy_event();
+    }
+    buttonX_clicked = function () {
+      buttons = [1, 0, 0, 0];
+      joy_event();
+    }
+    buttonB_clicked = function () {
+      buttons = [0, 0, 1, 0];
+      joy_event();
+    }
+    buttonA_clicked = function () {
+      buttons = [0, 1, 0, 0];
+      joy_event();
+    }
+
+    var axes = [0, 0];
+    var buttons = [0, 0, 0, 0];
 
 
-              listeners[i] = new ROSLIB.Topic({
-                ros : ros,
-                name : sensorList[i],
-                messageType : 'std_msgs/Float64'
-              });
-              subFuncs[i] = sensorSub.bind(null, i);
+  </script>
+  <link rel="stylesheet" type="text/css" href="style.css">
 
-              listeners[i].subscribe( subFuncs[i] );
-            }
-            document.getElementById("sensor_listing").innerHTML = sensorHTML;
-        }
-      
-        function sensorSub(ij, message) {
-          console.log('arguments.length ' + arguments.length );
-          for( i = 0; i < arguments.length; i++)
-          {
-              console.log( i + ':::' + arguments[i] );
-          }
-          temp = document.getElementById(sensorList[ij]);
-          cn = "list-group-item list-group-item-";
-          if( dangerMin[ij] <= message.data )
-          {
-            cn += "danger";
-          }
-          else if( warningMin[ij] <= message.data )
-          {
-            cn += "warning";
-          }
-          else
-          {
-            cn += "success";
-          }
-          temp.className = cn;
-          temp.innerHTML= sensorList[ij] + "::" + Math.round(message.data*10)/10;
-        }
-        
-        </script>
-        
-    </head>
+</head>
 
-    <body onload="init()">
-        <script src="javascript/jquery.min.js"></script>
-        <script src="js/bootstrap.min.js"></script>
-        <div class="tab-content">
-          <div class="tab-pane active" id="lA">
-            <div id="content">
-              <div id="container">
-                <table><tr>
-                  <td height=0 width=0>
-                    <div id="mjpeg"></div>
-                    <span id="result"></span>
-                  </td>
-                  <td height=120 width=30>
-
-                    <div class="list-group" id="sensor_listing">
-                    </div>
-
-                  </td>
-                </tr></table>
-              </div>
+<body>
+  <main>
+    <div class="wrapper">
+        <div class="left" id="left">
+            <div class="joy_container" id="joy_container">
             </div>
-          </div>
         </div>
 
-        <!-- Load the virtual joystick javascript file -->
-        <script src="virtualjoystick.js"></script>
+        <div class="middle" id="middle">
+            <div class="image_container" >
+                <img  id="video_output" style="object-fit:cover; width:100%;"></img>
+            </div>
+        </div>
+        <div class="right" id="right">
+          <div class="button_container">
+            <button class="button buttonY" onclick="buttonY_clicked()">Y</button>
+            <button class="button buttonX" onclick="buttonX_clicked()">X</button>
+            <button class="button buttonB" onclick="buttonB_clicked()">B</button>
+            <button class="button buttonA" onclick="buttonA_clicked()">A</button>
+          </div>
+        </div>
+    </div>
+  </main>
 
-        <!-- Load and handle the actual joysticks -->
-        <script>
-        function loadJoy(){
-            console.log("touchscreen is", VirtualJoystick.touchScreenAvailable() ? "available" : "not available");
-            // 
-            var joystick_left    = new VirtualJoystick({
-                container   : document.getElementById("mjpeg"),
-                strokeStyle : 'cyan',
-                limitStickTravel: true,
-                stickRadius : 120       
-            });
-            joystick_left.addEventListener('touchStartValidation', function(event){
-                var touch   = event.changedTouches[0];
-                if( touch.pageX > window.innerWidth/2 ) return false;
-                return true
-            });
-            // one on the right of the screen
-            var joystick_right    = new VirtualJoystick({
-                container   : document.getElementById("mjpeg"),
-                strokeStyle : 'orange',
-                limitStickTravel: true,
-                stickRadius : 120     
-            });
-            joystick_right.addEventListener('touchStartValidation', function(event){
-                var touch   = event.changedTouches[0];
-                if( touch.pageX <= window.innerWidth/2 )    return false;
-                return true
-            });
 
-            setInterval(
-                function()
-                {
-                    twistPublish(-joystick_left.deltaX()/window.innerHeight,-joystick_left.deltaY()/window.innerHeight,"left");
-                    twistPublish(-joystick_right.deltaX()/window.innerHeight,-joystick_right.deltaY()/window.innerHeight,"right");
-                }, 1/10 * 1000
-            );
-        }
-
-        function destroyJoy(){
-            joystick_left.destroy();
-            joystick_right.destroy();
-        }
-
-        </script>
-    </body>
 </html>

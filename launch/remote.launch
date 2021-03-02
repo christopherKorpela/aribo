@@ -1,20 +1,28 @@
 <launch>
 
-  <arg name="use_usb_cam" default="true" />
+  <arg name="use_usb_cam" default="false" />
   <arg name="use_ptg_cam" default="false" />
+  <arg name="use_realsense" default="true" />
 
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
-  <node pkg="mjpeg_server" type="mjpeg_server" name="mjpeg_server" />
+
+  <node pkg="web_video_server" type="web_video_server" name="web_video_server" />
 
   <rosparam command="load" file="$(find usma_remote_interface)/config/gains.yaml" />
 
+  <!--
   <node pkg="usma_remote_interface" type="remoteCmdDemux.py" name="remote_cmd_demux" output="screen">
   </node>
+  -->
 
   <group if="$(arg use_ptg_cam)">
     <include file="$(find pointgrey_camera_driver)/launch/camera.launch"/>
   </group>
 
+  <group if="$(arg use_realsense)">
+  <include file="$(find gvrbot_camera)/launch/rs_d435_camera.launch"/>
+  </group>
+  
   <group if="$(arg use_usb_cam)">
     <arg name="width" default="1920" />
     <arg name="height" default="1080" />
