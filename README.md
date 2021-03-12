@@ -2,7 +2,7 @@ usma_remote_interface
 =====================
 1. Install all dependencies (assuming ROS Melodic).
  * $ `sudo apt-get install ros-melodic-rosbridge-server`
- * $ `sudo apt-get install ros-melodic-mjpeg-server`
+ * $ `sudo apt-get install ros-melodic-web-video-server`
   
 2. Clone the usma_remote_interface ros package into your catkin workspace src folder.
   * $ `cd ~/catkin_ws/src`
