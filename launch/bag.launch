@@ -1,0 +1,16 @@
+<launch>
+  <arg name="bag_name" default="/home/ken/drive3.bag" />
+
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
+  <node pkg="web_video_server" type="web_video_server" name="web_video_server" />
+
+  <rosparam command="load" file="$(find usma_remote_interface)/config/gains.yaml" />
+
+  <node pkg="rosbag" type="play" name="player" output="screen" args="--clock $(arg bag_name)"/>
+
+  <!--
+  <node pkg="usma_remote_interface" type="remoteCmdDemux.py" name="remote_cmd_demux" output="screen">
+  </node>
+  -->
+</launch>
